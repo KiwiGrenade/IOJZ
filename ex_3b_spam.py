@@ -29,7 +29,8 @@ PLOT_DPI = 300
 
 # Estetyka (Kolory i palety)
 CMAP_CM = "Greens"
-COLOR_BAR = "salmon"
+COLOR_BAR_SPAM = "salmon"
+COLOR_BAR_HAM = "skyblue"
 PALETTE_HIST = {"ham": "royalblue", "spam": "firebrick"}
 
 
@@ -134,7 +135,7 @@ def plot_confusion_matrix_spam(y_test, y_pred, filename):
 def plot_top_spam_words(model, vectorizer, filename):
     """Identyfikuje najsilniejsze predyktory dla klasy SPAM i rysuje wykres słupkowy."""
     feature_names = vectorizer.get_feature_names_out()
-    spam_prob = model.feature_log_prob_[1]
+    spam_prob = model.feature_log_prob_[1]  # Indeks 1 odpowiada klasie SPAM
     
     top_indices = np.argsort(spam_prob)[-TOP_N_WORDS:]
     
@@ -142,8 +143,28 @@ def plot_top_spam_words(model, vectorizer, filename):
     top_probs = [spam_prob[i] for i in top_indices]
 
     plt.figure(figsize=FIG_SIZE_BAR)
-    plt.barh(top_words, top_probs, color=COLOR_BAR, edgecolor="black")
+    plt.barh(top_words, top_probs, color=COLOR_BAR_SPAM, edgecolor="black")
     plt.title(f"Top {TOP_N_WORDS} słów kluczowych determinujących SPAM")
+    plt.xlabel("Log-Prawdopodobieństwo (wyższe = ważniejsze)")
+    plt.grid(True, axis="x", linestyle=":", alpha=0.5)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=PLOT_DPI)
+    plt.close()
+
+
+def plot_top_ham_words(model, vectorizer, filename):
+    """Identyfikuje najsilniejsze predyktory dla klasy HAM i rysuje wykres słupkowy."""
+    feature_names = vectorizer.get_feature_names_out()
+    ham_prob = model.feature_log_prob_[0]  # Indeks 0 odpowiada klasie HAM
+    
+    top_indices = np.argsort(ham_prob)[-TOP_N_WORDS:]
+    
+    top_words = [feature_names[i] for i in top_indices]
+    top_probs = [ham_prob[i] for i in top_indices]
+
+    plt.figure(figsize=FIG_SIZE_BAR)
+    plt.barh(top_words, top_probs, color=COLOR_BAR_HAM, edgecolor="black")
+    plt.title(f"Top {TOP_N_WORDS} słów kluczowych determinujących HAM")
     plt.xlabel("Log-Prawdopodobieństwo (wyższe = ważniejsze)")
     plt.grid(True, axis="x", linestyle=":", alpha=0.5)
     plt.tight_layout()
@@ -175,12 +196,17 @@ def main():
     cm_file = "real_bayes_cm.png"
     plot_confusion_matrix_spam(y_test, y_pred, cm_file)
 
-    # 5. Top najważniejszych słów
+    # 5. Top najważniejszych słów dla SPAM
     print("Generowanie wykresu: Najczęstsze słowa w spamie...")
-    top_words_file = "real_spam_features.png"
-    plot_top_spam_words(model, vectorizer, top_words_file)
+    top_spam_file = "real_spam_features.png"
+    plot_top_spam_words(model, vectorizer, top_spam_file)
 
-    print(f"\nGotowe! Zapisano wykresy:\n- {hist_file}\n- {cm_file}\n- {top_words_file}\n")
+    # 6. Top najważniejszych słów dla HAM
+    print("Generowanie wykresu: Najczęstsze słowa w hamie...")
+    top_ham_file = "real_ham_features.png"
+    plot_top_ham_words(model, vectorizer, top_ham_file)
+
+    print(f"\nGotowe! Zapisano wykresy:\n- {hist_file}\n- {cm_file}\n- {top_spam_file}\n- {top_ham_file}\n")
 
 
 if __name__ == "__main__":
