@@ -1,0 +1,531 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+\pgfplotsset{compat=1.18}
+
+\geometry{margin=2.5cm}
+
+\title{Inteligencja Obliczeniowa i jej Zastosowania \\ Laboratorium 1 - sprawozdanie}
+\author{Jakub Jaśków}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Opis analizowanego systemu}
+
+Analizowanym systemem jest instalacja przeciwpożarowa uruchamiana na żądanie w budynku użyteczności publicznej. System składa się z czujników dymu, centrali sterującej oraz instalacji gaśniczej (np. tryskaczowej).
+
+System pracuje w trybie \textit{on-demand}, ponieważ jego działanie wymagane jest jedynie w sytuacji wystąpienia pożaru. W normalnych warunkach system pozostaje w stanie gotowości.
+
+Zdarzeniem niepożądanym analizowanym w pracy jest:
+
+\[
+T = \text{brak uruchomienia instalacji gaśniczej podczas pożaru}
+\]
+
+Zdarzenie to może prowadzić do strat materialnych, zagrożenia zdrowia i życia ludzi oraz niespełnienia wymagań bezpieczeństwa.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    block/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=1cm, align=center},
+    >=Latex,
+    node distance=2cm
+]
+
+\node[block] (sensor) {Czujnik dymu};
+\node[block, right=of sensor] (control) {Centrala\\sterująca};
+\node[block, right=of control] (fire) {Instalacja\\gaśnicza};
+
+\draw[->] (sensor) -- (control);
+\draw[->] (control) -- (fire);
+
+\end{tikzpicture}
+\caption{Schemat działania analizowanego systemu przeciwpożarowego uruchamianego na żądanie.}
+\label{fig:system}
+\end{figure}
+
+\section{Rozmyta skala prawdopodobieństwa}
+
+Do opisu prawdopodobieństw zdarzeń bazowych zastosowano zmienną lingwistyczną \textit{Probability}. Każdej wartości lingwistycznej przypisano trapezową funkcję przynależności.
+
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+Wartość lingwistyczna & Opis & Parametry trapezu $(a,b,c,d)$ \\
+\midrule
+VS & bardzo małe & $(0,0,0.002,0.01)$ \\
+S  & małe & $(0.005,0.01,0.03,0.05)$ \\
+M  & średnie & $(0.03,0.06,0.10,0.15)$ \\
+B  & duże & $(0.10,0.15,0.20,0.30)$ \\
+VB & bardzo duże & $(0.25,0.30,0.40,0.50)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+W dalszej części sprawozdania każdą liczbę rozmytą zapisano w postaci trapezowej:
+\[
+\tilde{X}=(a,b,c,d)
+\]
+
+gdzie:
+\begin{itemize}
+\item $[a,d]$ jest nośnikiem liczby rozmytej,
+\item $[b,c]$ jest rdzeniem liczby rozmytej.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=15cm,
+    height=8cm,
+    xmin=0, xmax=0.5,
+    ymin=0, ymax=1.1,
+    xlabel={Prawdopodobieństwo},
+    ylabel={Stopień przynależności},
+    grid=both,
+    legend style={at={(0.5,-0.2)}, anchor=north, legend columns=5}
+]
+
+\addplot[thick] coordinates {(0,0) (0,1) (0.002,1) (0.01,0)};
+\addlegendentry{VS}
+
+\addplot[thick] coordinates {(0.005,0) (0.01,1) (0.03,1) (0.05,0)};
+\addlegendentry{S}
+
+\addplot[thick] coordinates {(0.03,0) (0.06,1) (0.10,1) (0.15,0)};
+\addlegendentry{M}
+
+\addplot[thick] coordinates {(0.10,0) (0.15,1) (0.20,1) (0.30,0)};
+\addlegendentry{B}
+
+\addplot[thick] coordinates {(0.25,0) (0.30,1) (0.40,1) (0.50,0)};
+\addlegendentry{VB}
+
+\end{axis}
+\end{tikzpicture}
+\caption{Rozmyta skala prawdopodobieństwa dla zmiennej lingwistycznej \textit{Probability}.}
+\label{fig:fuzzy-scale}
+\end{figure}
+
+\section{Drzewo niezdatności}
+
+Dla analizowanego systemu skonstruowano drzewo niezdatności ze zdarzeniem szczytowym:
+
+\[
+T = \text{brak uruchomienia instalacji gaśniczej podczas pożaru}
+\]
+
+Założono, że do zdarzenia szczytowego może doprowadzić wystąpienie któregokolwiek z następujących zdarzeń bazowych:
+\begin{itemize}
+\item $A$ -- awaria czujnika dymu,
+\item $B$ -- awaria centrali sterującej,
+\item $C$ -- brak zasilania systemu,
+\item $D$ -- awaria instalacji gaśniczej.
+\end{itemize}
+
+\section{Oszacowanie prawdopodobieństw zdarzeń bazowych}
+
+Dla poszczególnych zdarzeń bazowych przyjęto następujące oceny lingwistyczne oraz odpowiadające im liczby rozmyte trapezowe:
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+Zdarzenie & Opis & Ocena lingwistyczna & Parametry trapezu \\
+\midrule
+$A$ & Awaria czujnika dymu & M  & $(0.005,0.01,0.03,0.05)$ \\
+$B$ & Awaria centrali sterującej & VM & $(0,0,0.002,0.01)$ \\
+$C$ & Brak zasilania systemu & M  & $(0.005,0.01,0.03,0.05)$ \\
+$D$ & Awaria instalacji gaśniczej & S  & $(0.03,0.06,0.10,0.15)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Zatem:
+\[
+\tilde{A}=(0.005,0.01,0.03,0.05)
+\]
+\[
+\tilde{B}=(0,0,0.002,0.01)
+\]
+\[
+\tilde{C}=(0.005,0.01,0.03,0.05)
+\]
+\[
+\tilde{D}=(0.03,0.06,0.10,0.15)
+\]
+
+\section{Wyznaczenie prawdopodobieństwa zdarzenia szczytowego}
+
+Dla bramki OR prawdopodobieństwo zdarzenia szczytowego opisuje wzór:
+\[
+P(T)=1-(1-\tilde{A})(1-\tilde{B})(1-\tilde{C})(1-\tilde{D})
+\]
+
+W obliczeniach zastosowano aproksymację trapezową. Dla liczby rozmytej:
+\[
+\tilde{X}=(a,b,c,d)
+\]
+przyjmujemy:
+\[
+1-\tilde{X}=(1-d,\;1-c,\;1-b,\;1-a)
+\]
+
+Natomiast dla dwóch dodatnich liczb trapezowych:
+\[
+\tilde{X}=(a,b,c,d), \qquad \tilde{Y}=(e,f,g,h)
+\]
+stosujemy aproksymację:
+\[
+\tilde{X}\otimes\tilde{Y}\approx(ae,\;bf,\;cg,\;dh)
+\]
+
+\subsection{Krok 1 -- wyznaczenie dopełnień}
+
+\[
+1-\tilde{A}=(1-0.05,\;1-0.03,\;1-0.01,\;1-0.005)
+\]
+\[
+1-\tilde{A}=(0.95,\;0.97,\;0.99,\;0.995)
+\]
+
+\[
+1-\tilde{B}=(1-0.01,\;1-0.002,\;1-0,\;1-0)
+\]
+\[
+1-\tilde{B}=(0.99,\;0.998,\;1,\;1)
+\]
+
+\[
+1-\tilde{C}=(0.95,\;0.97,\;0.99,\;0.995)
+\]
+
+\[
+1-\tilde{D}=(1-0.15,\;1-0.10,\;1-0.06,\;1-0.03)
+\]
+\[
+1-\tilde{D}=(0.85,\;0.90,\;0.94,\;0.97)
+\]
+
+\subsection{Krok 2 -- iloczyn $(1-\tilde{A})(1-\tilde{B})$}
+
+\[
+(1-\tilde{A})(1-\tilde{B}) \approx
+(0.95\cdot0.99,\;0.97\cdot0.998,\;0.99\cdot1,\;0.995\cdot1)
+\]
+
+\[
+(1-\tilde{A})(1-\tilde{B}) \approx
+(0.9405,\;0.96806,\;0.99,\;0.995)
+\]
+
+\subsection{Krok 3 -- iloczyn z $(1-\tilde{C})$}
+
+\[
+[(1-\tilde{A})(1-\tilde{B})](1-\tilde{C}) \approx
+(0.9405\cdot0.95,\;0.96806\cdot0.97,\;0.99\cdot0.99,\;0.995\cdot0.995)
+\]
+
+\[
+\approx
+(0.893475,\;0.9390182,\;0.9801,\;0.990025)
+\]
+
+\subsection{Krok 4 -- iloczyn z $(1-\tilde{D})$}
+
+\[
+[(1-\tilde{A})(1-\tilde{B})(1-\tilde{C})](1-\tilde{D}) \approx
+\]
+\[
+(0.893475\cdot0.85,\;0.9390182\cdot0.90,\;0.9801\cdot0.94,\;0.990025\cdot0.97)
+\]
+
+\[
+\approx
+(0.75945375,\;0.84511638,\;0.921294,\;0.96032425)
+\]
+
+\subsection{Krok 5 -- wyznaczenie $P(T)$}
+
+Teraz obliczamy dopełnienie otrzymanego wyniku:
+\[
+P(T)=1-(0.75945375,\;0.84511638,\;0.921294,\;0.96032425)
+\]
+
+\[
+P(T)\approx
+(1-0.96032425,\;1-0.921294,\;1-0.84511638,\;1-0.75945375)
+\]
+
+\[
+P(T)\approx
+(0.03967575,\;0.078706,\;0.15488362,\;0.24054625)
+\]
+
+Po zaokrągleniu:
+\[
+P(T)\approx(0.04,\;0.079,\;0.155,\;0.241)
+\]
+
+Dla uproszczenia dalszej interpretacji można przyjąć:
+\[
+P(T)\approx(0.04,\;0.08,\;0.15,\;0.24)
+\]
+
+Oznacza to, że:
+\begin{itemize}
+\item nośnik liczby rozmytej wynosi w przybliżeniu $[0.04,0.24]$,
+\item rdzeń liczby rozmytej wynosi w przybliżeniu $[0.08,0.15]$.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=12cm,
+    height=7cm,
+    xmin=0, xmax=0.26,
+    ymin=0, ymax=1.1,
+    xlabel={$P(T)$},
+    ylabel={Stopień przynależności},
+    grid=both
+]
+
+\addplot[thick] coordinates {(0.0397,0) (0.0787,1) (0.1549,1) (0.2405,0)};
+
+\end{axis}
+\end{tikzpicture}
+\caption{Aproksymowana trapezowa funkcja przynależności prawdopodobieństwa zdarzenia szczytowego $P(T)$.}
+\label{fig:pt-trapezoid}
+\end{figure}
+
+\section{Analiza znaczenia zdarzeń bazowych}
+
+Analiza znaczenia polega na sprawdzeniu, jak zmieniają się parametry trapezowej funkcji przynależności $P(T)$ po wyeliminowaniu negatywnego wpływu danego zdarzenia bazowego, czyli po przyjęciu jego prawdopodobieństwa równego:
+\[
+(0,0,0,0)
+\]
+
+\subsection{Eliminacja zdarzenia $A$}
+
+Przyjmujemy:
+\[
+\tilde{A}=(0,0,0,0)
+\]
+zatem:
+\[
+1-\tilde{A}=(1,1,1,1)
+\]
+
+Wtedy:
+\[
+P(T|A=0)=1-(1-\tilde{B})(1-\tilde{C})(1-\tilde{D})
+\]
+
+Najpierw:
+\[
+(1-\tilde{B})(1-\tilde{C})\approx
+(0.99\cdot0.95,\;0.998\cdot0.97,\;1\cdot0.99,\;1\cdot0.995)
+\]
+\[
+\approx(0.9405,\;0.96806,\;0.99,\;0.995)
+\]
+
+Następnie:
+\[
+(0.9405,\;0.96806,\;0.99,\;0.995)(0.85,\;0.90,\;0.94,\;0.97)
+\]
+\[
+\approx(0.799425,\;0.871254,\;0.9306,\;0.96515)
+\]
+
+Stąd:
+\[
+P(T|A=0)\approx
+(1-0.96515,\;1-0.9306,\;1-0.871254,\;1-0.799425)
+\]
+
+\[
+P(T|A=0)\approx
+(0.03485,\;0.0694,\;0.128746,\;0.200575)
+\]
+
+\subsection{Eliminacja zdarzenia $B$}
+
+Przyjmujemy:
+\[
+\tilde{B}=(0,0,0,0)
+\]
+zatem:
+\[
+1-\tilde{B}=(1,1,1,1)
+\]
+
+Wtedy:
+\[
+P(T|B=0)=1-(1-\tilde{A})(1-\tilde{C})(1-\tilde{D})
+\]
+
+Najpierw:
+\[
+(1-\tilde{A})(1-\tilde{C})\approx
+(0.95\cdot0.95,\;0.97\cdot0.97,\;0.99\cdot0.99,\;0.995\cdot0.995)
+\]
+\[
+\approx(0.9025,\;0.9409,\;0.9801,\;0.990025)
+\]
+
+Następnie:
+\[
+(0.9025,\;0.9409,\;0.9801,\;0.990025)(0.85,\;0.90,\;0.94,\;0.97)
+\]
+\[
+\approx(0.767125,\;0.84681,\;0.921294,\;0.96032425)
+\]
+
+Stąd:
+\[
+P(T|B=0)\approx
+(1-0.96032425,\;1-0.921294,\;1-0.84681,\;1-0.767125)
+\]
+
+\[
+P(T|B=0)\approx
+(0.03967575,\;0.078706,\;0.15319,\;0.232875)
+\]
+
+\subsection{Eliminacja zdarzenia $C$}
+
+Ponieważ zdarzenia $A$ i $C$ mają identyczne parametry, otrzymujemy taki sam wynik jak dla eliminacji zdarzenia $A$:
+
+\[
+P(T|C=0)\approx
+(0.03485,\;0.0694,\;0.128746,\;0.200575)
+\]
+
+\subsection{Eliminacja zdarzenia $D$}
+
+Przyjmujemy:
+\[
+\tilde{D}=(0,0,0,0)
+\]
+zatem:
+\[
+1-\tilde{D}=(1,1,1,1)
+\]
+
+Wtedy:
+\[
+P(T|D=0)=1-(1-\tilde{A})(1-\tilde{B})(1-\tilde{C})
+\]
+
+Z wcześniejszych obliczeń:
+\[
+(1-\tilde{A})(1-\tilde{B})(1-\tilde{C})\approx
+(0.893475,\;0.9390182,\;0.9801,\;0.990025)
+\]
+
+Stąd:
+\[
+P(T|D=0)\approx
+(1-0.990025,\;1-0.9801,\;1-0.9390182,\;1-0.893475)
+\]
+
+\[
+P(T|D=0)\approx
+(0.009975,\;0.0199,\;0.0609818,\;0.106525)
+\]
+
+\subsection{Zestawienie wyników}
+
+\begin{center}
+\begin{tabular}{cc}
+\toprule
+Przypadek & Aproksymacja trapezowa $P(T)$ \\
+\midrule
+Wartość bazowa & $(0.0397,\;0.0787,\;0.1549,\;0.2405)$ \\
+bez $A$ & $(0.0349,\;0.0694,\;0.1287,\;0.2006)$ \\
+bez $B$ & $(0.0397,\;0.0787,\;0.1532,\;0.2329)$ \\
+bez $C$ & $(0.0349,\;0.0694,\;0.1287,\;0.2006)$ \\
+bez $D$ & $(0.0100,\;0.0199,\;0.0610,\;0.1065)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=14cm,
+    height=8cm,
+    xmin=0, xmax=0.26,
+    ymin=0, ymax=1.1,
+    xlabel={$P(T)$},
+    ylabel={Stopień przynależności},
+    grid=both,
+    legend style={at={(0.5,-0.2)}, anchor=north, legend columns=2}
+]
+
+\addplot[thick] coordinates {(0.0397,0) (0.0787,1) (0.1549,1) (0.2405,0)};
+\addlegendentry{Wartość bazowa}
+
+\addplot[thick,dashed] coordinates {(0.0349,0) (0.0694,1) (0.1287,1) (0.2006,0)};
+\addlegendentry{bez $A$}
+
+\addplot[thick,dotted] coordinates {(0.0397,0) (0.0787,1) (0.1532,1) (0.2329,0)};
+\addlegendentry{bez $B$}
+
+\addplot[thick,dashdotted] coordinates {(0.0349,0) (0.0694,1) (0.1287,1) (0.2006,0)};
+\addlegendentry{bez $C$}
+
+\addplot[thick] coordinates {(0.0100,0) (0.0199,1) (0.0610,1) (0.1065,0)};
+\addlegendentry{bez $D$}
+
+\end{axis}
+\end{tikzpicture}
+\caption{Porównanie trapezowych funkcji przynależności prawdopodobieństwa zdarzenia szczytowego dla różnych wariantów eliminacji zdarzeń bazowych.}
+\label{fig:importance}
+\end{figure}
+
+\section{Wnioski}
+
+Na podstawie przeprowadzonej analizy można sformułować następujące wnioski:
+
+\begin{enumerate}
+\item Zastosowanie trapezowych liczb rozmytych pozwala uwzględnić niepewność oceny prawdopodobieństw zdarzeń bazowych w bardziej realistyczny sposób niż przy użyciu pojedynczych wartości liczbowych.
+
+\item Prawdopodobieństwo zdarzenia szczytowego zostało wyznaczone w postaci liczby rozmytej trapezowej:
+\[
+P(T)\approx(0.0397,\;0.0787,\;0.1549,\;0.2405)
+\]
+co po zaokrągleniu można zapisać jako:
+\[
+P(T)\approx(0.04,\;0.08,\;0.15,\;0.24)
+\]
+
+\item Otrzymany wynik oznacza, że najbardziej wiarygodne wartości prawdopodobieństwa zdarzenia szczytowego znajdują się w przybliżeniu w przedziale od $0.08$ do $0.15$, natomiast pełny zakres możliwych wartości mieści się od około $0.04$ do $0.24$.
+
+\item Analiza znaczenia pokazuje, że największy wpływ na prawdopodobieństwo zdarzenia szczytowego ma zdarzenie $D$, czyli awaria instalacji gaśniczej. Po jego eliminacji wszystkie parametry liczby rozmytej $P(T)$ ulegają największemu zmniejszeniu.
+
+\item Zdarzenia $A$ i $C$ mają identyczny i umiarkowanie duży wpływ na wynik końcowy, co wynika z przyjęcia takich samych parametrów trapezowych dla obu zdarzeń.
+
+\item Najmniejszy wpływ na wynik ma zdarzenie $B$, czyli awaria centrali sterującej. Po jego eliminacji zmiana parametrów funkcji przynależności jest niewielka.
+
+\item W praktyce oznacza to, że działania zwiększające bezpieczeństwo systemu powinny być skierowane przede wszystkim na poprawę niezawodności instalacji gaśniczej, a następnie na zapewnienie poprawnej pracy czujników dymu i zasilania.
+\end{enumerate}
+
+\end{document}

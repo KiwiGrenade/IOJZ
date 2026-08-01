@@ -1,0 +1,361 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{items}[circle]
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit, backgrounds}
+
+\definecolor{MainBlue}{RGB}{27,78,114}
+\definecolor{Accent}{RGB}{204,102,0}
+\definecolor{Soft}{RGB}{241,245,249}
+\definecolor{Good}{RGB}{46,125,50}
+\definecolor{Warn}{RGB}{183,28,28}
+
+\setbeamercolor{structure}{fg=MainBlue}
+\setbeamercolor{frametitle}{fg=white,bg=MainBlue}
+% \setbeamercolor{title}{fg=MainBlue}
+\setbeamercolor{block title}{fg=white,bg=MainBlue}
+\setbeamercolor{block body}{bg=Soft}
+\setbeamercolor{alerted text}{fg=Accent}
+% \setbeamertemplate{title page}{%
+%   \vspace*{0.8cm}
+%   {\usebeamerfont{title}\color{MainBlue}\inserttitle\par}
+%   \vspace{0.25cm}
+%   {\large \insertsubtitle\par}
+%   \vspace{0.8cm}
+%   {\normalsize \insertauthor\par}
+%   \vspace{0.15cm}
+%   {\small \insertdate\par}
+%   \vfill
+%   \begin{beamercolorbox}[wd=\textwidth,sep=0.5em,left]{block body}
+%   \textbf{Cel prezentacji:} syntetyczne omówienie analizy drzewa zdarzeń z rozmytymi prawdopodobieństwami dla systemu ochrony przeciwpożarowej magazynu logistycznego.
+%   \end{beamercolorbox}
+% }
+
+\title{Inteligencja obliczeniowa i jej zastosowania - Lista 2 - wariant B}
+\subtitle{Drzewa zdarzeń z rozmytymi prawdopodobieństwami}
+\author[Jakub Jaśków, Justyna Ziemichód]{Jakub Jaśków, Justyna Ziemichód}
+\date{14 marca 2026}
+
+\newcommand{\trap}[4]{$(#1,#2,#3,#4)$}
+\newcommand{\smallcaps}[1]{{\footnotesize #1}}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Plan prezentacji}
+    \tableofcontents
+\end{frame}
+
+\section{Opis systemu}
+\begin{frame}{Analizowany system i logika obrony}
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.57\textwidth}
+\begin{block}{System}
+Analizowanym obiektem jest \textbf{wielkopowierzchniowy magazyn logistyczny}, a zdarzeniem inicjującym jest \textbf{wybuch pożaru} o rozmytej intensywności $I_{IE}$ [1/rok].
+\end{block}
+
+\vspace{0.2cm}
+\begin{itemize}
+  \item \textbf{B1 -- zraszacze:} automatyczne tłumienie pożaru w zarodku.
+  \item \textbf{B2 -- grodzie i drzwi ppoż.:} ograniczenie rozprzestrzeniania ognia.
+  \item \textbf{B3 -- Straż Pożarna:} skuteczna interwencja w czasie krótszym niż 15 minut.
+\end{itemize}
+
+\column{0.4\textwidth}
+\centering
+\begin{tikzpicture}[node distance=0.4cm]
+  \node[draw, rounded corners, fill=Soft, minimum width=2.8cm, minimum height=0.75cm, align=center] (ie) {Pożar\\$I_{IE}$};
+  \node[draw, rounded corners, fill=blue!8, below=of ie, minimum width=2.8cm, minimum height=0.75cm, align=center] (b1) {B1\\Zraszacze};
+  \node[draw, rounded corners, fill=blue!8, below=of b1, minimum width=2.8cm, minimum height=0.75cm, align=center] (b2) {B2\\Drzwi ppoż.};
+  \node[draw, rounded corners, fill=blue!8, below=of b2, minimum width=2.8cm, minimum height=0.75cm, align=center] (b3) {B3\\Straż Pożarna};
+  \node[draw, rounded corners, fill=orange!12, below=of b3, minimum width=2.8cm, minimum height=0.75cm, align=center] (c) {Konsekwencje\\C1--C4};
+  \draw[-{Latex[length=2mm]}, thick, MainBlue] (ie) -- (b1);
+  \draw[-{Latex[length=2mm]}, thick, MainBlue] (b1) -- (b2);
+  \draw[-{Latex[length=2mm]}, thick, MainBlue] (b2) -- (b3);
+  \draw[-{Latex[length=2mm]}, thick, MainBlue] (b3) -- (c);
+\end{tikzpicture}
+
+\vspace{0.35cm}
+{\small \textcolor{Accent}{Model zakłada trzy niezależne warstwy zabezpieczeń.}}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Rozmyte skale wejściowe}
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.48\textwidth}
+\begin{block}{Intensywność pożaru $I$ [1/rok]}
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{1.5cm}p{4.0cm}}
+\toprule
+\textbf{Skala} & \textbf{Trapez} \\
+\midrule
+Bardzo niska & \trap{0.0}{0.0}{0.01}{0.02} \\
+Niska & \trap{0.01}{0.02}{0.03}{0.05} \\
+Średnia & \trap{0.03}{0.05}{0.08}{0.10} \\
+Wysoka & \trap{0.08}{0.10}{0.15}{0.20} \\
+\bottomrule
+\end{tabular}
+\end{block}
+
+\column{0.48\textwidth}
+\begin{block}{Prawdopodobieństwo awarii $P$}
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{1.5cm}p{4.0cm}}
+\toprule
+\textbf{Skala} & \textbf{Trapez} \\
+\midrule
+Bardzo niskie & \trap{0.0}{0.0}{0.001}{0.005} \\
+Niskie & \trap{0.001}{0.005}{0.010}{0.050} \\
+Średnie & \trap{0.010}{0.050}{0.100}{0.150} \\
+Wysokie & \trap{0.150}{0.300}{1.0}{1.0} \\
+\bottomrule
+\end{tabular}
+\end{block}
+\end{columns}
+
+\end{frame}
+
+\section{Drzewo zdarzeń}
+\begin{frame}{Drzewo zdarzeń}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\linewidth]{drzewo\_zdarzeń.png}
+    \label{fig:placeholder}
+\end{figure}
+\end{frame}
+
+\section{Oszacowanie parametrów modelu}
+\begin{frame}{Oszacowanie parametrów modelu}
+\small
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.58\textwidth}
+\begin{block}{Przyjęte wartości rozmyte}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3.2cm}p{3.6cm}}
+\toprule
+\textbf{Parametr} & \textbf{Wartość} \\
+\midrule
+Intensywność pożaru $I_{IE}$ & Średnia = \trap{0.03}{0.05}{0.08}{0.10} \\
+Awaria B1: $P_{B1}$ & Niska = \trap{0.001}{0.005}{0.010}{0.050} \\
+Awaria B2: $P_{B2}$ & Bardzo niska = \trap{0.0}{0.0}{0.001}{0.005} \\
+Awaria B3: $P_{B3}$ & Średnia = \trap{0.010}{0.050}{0.100}{0.150} \\
+\bottomrule
+\end{tabular}
+\end{block}
+
+\column{0.4\textwidth}
+\begin{block}{Sukces barier}
+\[
+1 \ominus P_{awarii}=(1-d,1-c,1-b,1-a)
+\]
+\vspace{-0.25cm}
+\begin{align*}
+1\ominus P_{B1} &= (0.950,0.990,0.995,0.999) \\
+1\ominus P_{B2} &= (0.995,0.999,1.0,1.0) \\
+1\ominus P_{B3} &= (0.850,0.900,0.950,0.990)
+\end{align*}
+\end{block}
+\end{columns}
+
+\begin{alertblock}{Założenie obliczeniowe}
+Dla intensywności konsekwencji zastosowano aproksymację mnożenia trapezów:
+\[
+A\otimes B=(a_A a_B,\; b_A b_B,\; c_A c_B,\; d_A d_B)
+\]
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Wyniki intensywności konsekwencji C1--C4}
+\small
+\begin{table}
+\centering
+\scriptsize
+\begin{tabular}{>{\raggedright\arraybackslash}p{1.3cm}>{\raggedright\arraybackslash}p{5.3cm}p{4.7cm}}
+\toprule
+\textbf{Konsekw.} & \textbf{Ścieżka} & \textbf{$I_C$ [1/rok]} \\
+\midrule
+C1 & $I_{IE}\otimes (1\ominus P_{B1})$ & \trap{0.0285}{0.0495}{0.0796}{0.0999} \\
+C2 & $I_{IE}\otimes P_{B1}\otimes (1\ominus P_{B2})$ & \trap{0.000029}{0.000249}{0.000800}{0.005000} \\
+C3 & $I_{IE}\otimes P_{B1}\otimes P_{B2}\otimes (1\ominus P_{B3})$ & \trap{0.0}{0.0}{0.00000076}{0.00002475} \\
+C4 & $I_{IE}\otimes P_{B1}\otimes P_{B2}\otimes P_{B3}$ & \trap{0.0}{0.0}{0.00000008}{0.00000375} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+
+\begin{alertblock}{Najważniejsza obserwacja}
+Dominującym scenariuszem jest \textbf{C1} — najczęściej pożar zostaje opanowany na pierwszej warstwie ochrony.  
+Konsekwencja \textbf{C4} ma intensywność rzędu $10^{-8}$–$10^{-6}$ zdarzeń na rok.
+\end{alertblock}
+
+\end{frame}
+
+\begin{frame}{Funkcje trapezowe intensywności konsekwencji}
+
+\begin{center}
+\begin{tikzpicture}
+
+\begin{axis}[
+width=12cm,
+height=8cm,
+xmode=log,
+log basis x=10,
+xmin=1e-8,
+xmax=2e-1,
+ymin=0,
+ymax=1.1,
+xlabel={Intensywność zdarzenia $I_C$ [1/rok]},
+ylabel={Stopień przynależności},
+grid=major,
+minor grid style={gray!15},
+grid style={gray!40},
+legend pos=outer north east,
+clip=false,
+tick label style={font=\scriptsize},
+label style={font=\small}
+]
+
+% C1
+\addplot[thick,blue]
+coordinates{
+(0.0285,0)
+(0.0495,1)
+(0.0796,1)
+(0.0999,0)
+};
+\addlegendentry{C1}
+
+% C2
+\addplot[thick,red]
+coordinates{
+(0.000029,0)
+(0.000249,1)
+(0.000800,1)
+(0.005000,0)
+};
+\addlegendentry{C2}
+
+% C3
+\addplot[thick,green!60!black]
+coordinates{
+(1e-8,0)
+(1e-8,1)
+(0.00000076,1)
+(0.00002475,0)
+};
+\addlegendentry{C3}
+
+% C4
+\addplot[thick,orange]
+coordinates{
+(1e-8,0)
+(1e-8,1)
+(0.00000008,1)
+(0.00000375,0)
+};
+\addlegendentry{C4}
+
+\end{axis}
+
+\end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+\section{Analiza znaczenia i wrażliwości}
+\begin{frame}{Analiza znaczenia i wrażliwości dla katastrofy C4}
+\small
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.48\textwidth}
+\begin{block}{Analiza znaczenia}
+\[
+I_{C4}=I_{IE}\otimes P_{B1}\otimes P_{B2}\otimes P_{B3}
+\]
+\begin{itemize}
+  \item Ścieżka do katastrofy ma \textbf{charakter szeregowy}.
+  \item Wyeliminowanie awarii \emph{dowolnej} bariery daje:
+  \[
+  I_{C4}= (0,0,0,0)
+  \]
+  \item Oznacza to, że idealna niezawodność jednej warstwy całkowicie blokuje scenariusz C4.
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{Analiza wrażliwości}
+\centering
+\scriptsize
+\begin{tabular}{>{\raggedright\arraybackslash}p{1.7cm}>{\centering\arraybackslash}p{1.2cm}>{\raggedright\arraybackslash}p{3.2cm}}
+\toprule
+\textbf{Zmiana} & \textbf{Skala} & \textbf{Nowe $I_{C4}$} \\
+\midrule
+Stan bazowy & -- & $\left(0,0,8.0\cdot10^{-8},\;3.75\cdot10^{-6}\right)$ \\
+B1 gorsze & N $\to$ S & $\left(0,0,8.0\cdot10^{-7},\;1.12\cdot10^{-5}\right)$ \\
+B3 lepsze & S $\to$ N & $\left(0,0,8.0\cdot10^{-9},\;1.25\cdot10^{-6}\right)$ \\
+\bottomrule
+\end{tabular}
+\end{block}
+
+\vspace{0.1cm}
+\begin{alertblock}{Wniosek}
+Najsilniej warto dbać o \textbf{wczesne warstwy ochrony}, zwłaszcza zraszacze -- ich pogorszenie podnosi intensywność katastrofy około dziesięciokrotnie.
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+\section{Wnioski}
+
+\begin{frame}{Wnioski końcowe}
+
+\begin{block}{Wnioski z analizy}
+\begin{enumerate}
+\item Model o strukturze iloczynowej jest wrażliwy na zmiany parametrów niezawodności barier bezpieczeństwa.
+
+\item Pogorszenie niezawodności zraszaczy z poziomu \textbf{Niskiego} do \textbf{Średniego} powoduje około \textbf{10-krotny wzrost} intensywności scenariusza katastrofalnego  
+($8.0 \times 10^{-8} \rightarrow 8.0 \times 10^{-7}$).
+
+\item Największe znaczenie dla ograniczenia ryzyka mają \textbf{pierwsze warstwy ochrony}.
+\end{enumerate}
+\end{block}
+
+\vspace{0.2cm}
+
+\begin{alertblock}{Implikacja praktyczna}
+Kluczowe dla bezpieczeństwa obiektu jest utrzymanie wysokiej niezawodności systemu zraszaczy.
+\end{alertblock}
+
+\end{frame}
+
+\begin{frame}[plain]
+
+\begin{center}
+
+\vspace{1.5cm}
+
+{\Huge \textcolor{MainBlue}{Dziękujemy za uwagę}}
+
+
+\end{center}
+
+\end{frame}
+
+\end{document}
